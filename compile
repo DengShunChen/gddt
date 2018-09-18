@@ -1,0 +1,1 @@
+pyinstaller gddt.py --distpath . -F --hiddenimport PIL._tkinter_finder --hiddenimport  pandas._libs.tslibs.np_datetime --hiddenimport  pandas._libs.tslibs.nattype --hiddenimport pandas._libs.skiplist ; rm -r build/; rm gddt.spec
