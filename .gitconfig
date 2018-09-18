@@ -1,0 +1,11 @@
+[user]
+  name = Deng-Shun Chen
+  email = dschen@cwb.gov.tw
+[alias]
+  co = checkout
+  ci = commit
+  st = status
+  hist = log --pretty=format:\"%h %ad | %s%d [%an]\" --graph --date=short
+[core]
+  excludesfile = /nwpr/gfs/xb80/.gitignore_global
+

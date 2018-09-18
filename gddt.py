@@ -64,43 +64,43 @@ class Application(tk.Frame):
     
     def clickPlot(self):
 
-       self.progressbar_var.set(0)
+        self.progressbar_var.set(0)
 
-       self.progressbar_var.set(self.progressbar_var.get()+10)
-       self.update()
+        self.progressbar_var.set(self.progressbar_var.get()+10)
+        self.update()
 
-       # save cookie
-       self.save_cookies()
-       self.progressbar_var.set(self.progressbar_var.get()+10)
-       self.update()
+        # save cookie
+        self.save_cookies()
+        self.progressbar_var.set(self.progressbar_var.get()+10)
+        self.update()
+       
+        if self.loop.get() == 1:      
+          self.fcsts = np.arange(0,217,6).tolist()
+        else:
+          self.fcsts = [0 if str(self.tau.get()) == 'Analysis' else str(self.tau.get()).rstrip(' hours')]
 
-       # print('plot data ')
-       self.plot_data()    
-       self.progressbar_var.set(self.progressbar_var.get()+10)
-       self.update()
+        self.plot_data()    
 
-       # print('show figure ')
-       self.show_figure()
-       self.progressbar_var.set(100)
-       self.update()
 
        # print('done !')
    
     def plot_data(self):
-      vars={}
-      vars["Geopotential height"]='000' 
-      vars["Temperature"]='100'
-      vars["U component of wind"]='200'
-      vars["V component of wind"]='210'
-      vars["Omega"]='220'
-      vars["Specific humidity"]='500'
-      vars["Relative humidity"]='510'
-      vars["Cloud liquid water mixing ratio"]='550'
-      vars["Ozone mixing ratio"]='560'
+      
+      # variables 
+      self.variables = [cwbgfs_dmsvar_dict[self.var.get()]]
 
+      if self.var.get() == 'Sea Surface Temperature' or self.var.get() == 'Sea Level Pressure':
+        self.label['text'] = self.var.get()
+        self.levels = [cwbgfs_dmslev_dict[self.var.get()]]
+        
+      else:
+        self.label['text']= self.var.get() +'  '+ self.lev.get()
 
-      #print(str(self.var.get()) +'  '+ str(self.lev.get()) + '  ' + str(self.dbpath.get()) + '  ' + str(self.dbname.get()) )
-      self.label['text']= str(self.var.get()) +'  '+ str(self.lev.get())
+        # levels 
+        if self.vcoor.get() == '0G':
+            self.levels = [ 'H00' if self.lev.get().rstrip(' hPa') == '1000' else '%3.3d' % int(str(self.lev.get()).rstrip(' hPa'))]
+        elif self.vcoor.get() == 'MG':
+            self.levels = [ 'M%2.2d' % int(self.spinbox.get()) ]
 
       self.expids= self.dbname.get().split(',')
       self.dmsflags = self.dmsflag.get().split(',')
@@ -108,15 +108,7 @@ class Application(tk.Frame):
       self.dmsfiles = self.dmsfile.get().split(',')
 
       self.begin_date = self.dtg.get()
-      self.variables = [vars[self.var.get()]]
-
-      if self.vcoor.get() == '0G':
-        self.levels = [ 'H00' if self.lev.get().rstrip(' hPa') == '1000' else '%3.3d' % int(str(self.lev.get()).rstrip(' hPa'))]
-      elif self.vcoor.get() == 'MG':
-        self.levels = [ 'M%2.2d' % int(self.spinbox.get())]
-            
-      self.fcsts = [0 if str(self.tau.get()) == 'Analysis' else str(self.tau.get()).rstrip(' hours')]
-
+      
       label=None 
       self.bdate = datetime.strptime(self.begin_date,'%Y%m%d%H')
       self.edate = self.bdate
@@ -125,12 +117,11 @@ class Application(tk.Frame):
  
       self.progressbar_var.set(self.progressbar_var.get()+10)
       self.update()
-      #print(self.expids,self.bdate,self.edate,self.fcsts,self.dmsdb_homes,self.dmsflags,self.variables,self.levels,self.save_figure,self.labels)
  
       if self.bdate == self.edate:
-          self.title_substr = '%s' % self.bdate.strftime('%Y%m%d%H')
+        self.title_substr = '%s' % self.bdate.strftime('%Y%m%d%H')
       else:
-          self.title_substr = '%s-%s' % (self.bdate.strftime('%Y%m%d%H'),self.edate.strftime('%Y%m%d%H'))
+        self.title_substr = '%s-%s' % (self.bdate.strftime('%Y%m%d%H'),self.edate.strftime('%Y%m%d%H'))
   
       if len(self.expids) > 1 and len(self.dmsdb_homes) == 1:
         self.dmsdb_homes = self.dmsdb_homes * len(self.expids)
@@ -147,10 +138,9 @@ class Application(tk.Frame):
       # loop over levels and variables
       for v,variable in enumerate(self.variables):
         for l,level in enumerate(self.levels):
-          #print(level,variable)
           self.var_substr = cwbgfs_level_dict[level]+' '+ cwbgfs_variable_dict[variable]
-  
-          for self.fcst in self.fcsts:
+ 
+          for self.f,self.fcst in enumerate(self.fcsts): 
             data = {}
   
             if self.bdate == self.edate:
@@ -183,15 +173,13 @@ class Application(tk.Frame):
               # get field
               data[expid] = self.get_field(data_base,data_name,data_dir)
   
+            if self.filenotexist : 
+              return 
+
             self.progressbar_var.set(self.progressbar_var.get()+10)
             self.update()
 
             # save/show figure
-            if self.save_figure:
-              plt.savefig(self.figname,dpi=100)
-            else:
-              plt.show()
-            
             if self.diff.get() == 1:
               if len(self.expids) == 2:
                 fig, ax, m = self.plot_diff(data)
@@ -206,6 +194,8 @@ class Application(tk.Frame):
 
             if self.save_figure:
                plt.savefig(self.figname,dpi=100)
+               plt.close()
+               self.show_figure()
             else:
                plt.show()
 
@@ -252,19 +242,27 @@ class Application(tk.Frame):
         self.label1['text'] = self.info_str
         self.label1['fg'] = 'black'
 
-        inc = (vmax - vmin)/50.
-        levels = np.arange(vmin,vmax+10e-10,inc)
-        clevels = np.arange(vmin,vmax+10e-10,inc*2)
+        if self.selfmaxmin.get() == 1 :
+          maxmin = self.maxmin.get().split(',') 
+          vmax = float(maxmin[0]) 
+          vmin = float(maxmin[1])
+
+        if self.f == 0:
+          inc = (vmax - vmin)/50.
+          self.levels = np.arange(vmin,vmax+10e-10,inc)
+          self.clevels = np.arange(vmin,vmax+10e-10,inc*2)
 
         # plot countourf
-        shading = ax.contourf(x, y, data, levels, cmap='RdYlBu_r',  alpha=0.75)
-        contour = ax.contour(x, y, data, clevels, colors='k', linewidths=0.5)
+        shading = ax.contourf(x, y, data, self.levels, cmap='RdYlBu_r',  alpha=0.75)
+        if self.contour.get() == 1 :
+          contour = ax.contour(x, y, data, self.clevels, colors='k', linewidths=0.5)
+          plt.clabel(contour,inline=True, fontsize=10, fmt='%5.1f')
+
         if len(self.expids) == 1:
           plt.title(self.labels[e],fontsize='large',fontweight='bold')
           cbar_ax = fig.add_axes([0.15, 0.05, 0.7, 0.02 ])
           fontsize = 'x-large'
           orientation = 'horizontal'
-          plt.clabel(contour,inline=True, fontsize=10, fmt='%5.1f')
         elif len(self.expids) == 2:
           plt.title(self.labels[e],fontsize='medium',fontweight='bold')
           cbar_ax = fig.add_axes([0.87, 0.1, 0.02, 0.7 ])
@@ -300,9 +298,16 @@ class Application(tk.Frame):
       lons = np.linspace(0,360,self.nlon,endpoint=False)
       X,Y = np.meshgrid(lons,lats)
       x,y = m(X,Y)
-      # find max and min value
+
+      # statistics
       vmax = np.max(np.amax(data,axis=0))
       vmin = np.min(np.amin(data,axis=0))
+      mean = np.mean(data)
+      std  = np.std(data)
+      self.info_str = 'max/min/avg/std = %e %e %e %e' % (vmax,vmin,mean,std)
+      self.label1['text'] = self.info_str
+      self.label1['fg'] = 'black'
+
       range = vmax
       if vmin > vmax:
         range = vmin
@@ -348,10 +353,12 @@ class Application(tk.Frame):
             print('\033[1;31m' + '%s does not exist' % filename + '\033[1;m')
             self.label1['text'] = '%s does not exist' % filename
             self.label1['fg'] = 'red'
+            self.filenotexist = True
             continue
           else:
             self.label1['text'] = '%s does exist' % filename
             self.label1['fg'] = 'blue'
+            self.filenotexist = False
     
           # get data
           df = self.read_dms(filename)
@@ -393,16 +400,20 @@ class Application(tk.Frame):
         else:
           self.canvas.create_text(500,300,anchor='center', font="Times 20 italic bold",text="Click the plot buttom to plot figure.") 
        
+        self.progressbar_var.set(100)
+        self.update()
 
     def _on_mousewheel(self, event):
       self.canvas.yview_scroll(int(-1*(event.delta/120)), "units")
 
     def createWidgets(self, master):
 
-        self.figname = './figure.png'
+        # clean prvious figure if existing 
+        self.figname = str(Path.home())+'/.gddt.png'
         if Path(self.figname).is_file():
           os.remove(self.figname)
 
+        # save cookie for next time defaluts settings
         self.cookie = str(Path.home())+'/.gddtrc'
         if Path(self.cookie).is_file():
           with open(self.cookie, 'r') as f:
@@ -419,10 +430,11 @@ class Application(tk.Frame):
                 'tau'     : "Forecast hours",
           }
 
-
+        # Title label
         self.label = tk.Label(master, text='Welcome ! This is Global DMS Display Tool.', font=("Helvetica", "20") )
-        self.label.grid(row=0, column=0, columnspan=20, sticky="NEWS")
+        self.label.grid(row=0, column=0, columnspan=20, sticky="EW")
 
+        # optioins 
         self.label1 = tk.Label(master, text="DMS DB PATH :")
         self.label1.grid(row=1, column=1, columnspan=3, sticky="E")
         self.dbpath = tk.StringVar(master)
@@ -431,7 +443,7 @@ class Application(tk.Frame):
         self.entry.grid(row=1, column=4, columnspan=12, sticky="WE")
 
         self.button = tk.Button(master, text="Quit", command=root.quit, bg = 'gray', fg = 'white')
-        self.button.grid(row=1, column=17, columnspan=2, sticky='NEWS') 
+        self.button.grid(row=1, column=17, columnspan=2, sticky='EW') 
 
         self.label1 = tk.Label(master, text="DMS DB NAME :")
         self.label1.grid(row=2, column=1, columnspan=3, sticky="E")
@@ -461,58 +473,95 @@ class Application(tk.Frame):
         self.entry = tk.Entry(master, textvariable=self.dmsflag)
         self.entry.grid(row=3, column=12, columnspan=4, sticky="WE")
 
-        self.optionList = ("Temperature","Geopotential height","U component of wind","V component of wind","Specific humidity","Relative humidity","Omega","Cloud liquid water mixing ratio","Ozone mixing ratio")
+        # for variables 
+        self.optionList = cwbgfs_dmsvar_dict.keys()
+        
         self.var = tk.StringVar(master)
         self.var.set(_data['var'])
         self.optionmenu = tk.OptionMenu(master, self.var, *self.optionList, command=self.var_select)
         self.optionmenu.grid(row=4, column=1, columnspan=4, sticky='EW')
               
-        self.optionList = ("10 hPa","20 hPa","30 hPa","50 hPa","100 hPa","200 hPa","300 hPa","400 hPa","500 hPa","600 hPa","700 hPa","850 hPa","1000 hPa")
+        # for pressure levels
+        self.optionList = ("10 hPa","20 hPa","30 hPa","50 hPa",
+                           "100 hPa","200 hPa","300 hPa","400 hPa",
+                           "500 hPa","600 hPa","700 hPa","850 hPa",
+                           "1000 hPa")
         self.lev = tk.StringVar()
         self.lev.set(_data['lev'])
         self.optionmenu = tk.OptionMenu(master, self.lev, *self.optionList, command=self.lev_select)
-        self.optionmenu.grid(row=4, column=6, columnspan=4, sticky='EW')
+        self.optionmenu.grid(row=4, column=6, columnspan=2, sticky='EW')
 
-        self.optionList = ("Analysis","6 hours","12 hours","18 hours","24 hours","30 hours","36 hours","42 hours","48 hours","54 hours","60 hours","66 hours","72 hours","84 hours","96 hours","108 hours","120 hours")
+        # for forecast hours
+        self.optionList = ( "Analysis","6 hours","12 hours","18 hours","24 hours","30 hours","36 hours","42 hours","48 hours",
+                            "54 hours","60 hours","66 hours","72 hours","84 hours","96 hours","108 hours","120 hours",
+                            "132 hours","144 hours","156 hours","168 hours","180 hours","192 hours","204 hours","216 hours")
         self.tau = tk.StringVar(master)
         self.tau.set(_data['tau'])
         self.optionmenu = tk.OptionMenu(master, self.tau, *self.optionList, command=self.tau_select)
         self.optionmenu.grid(row=5, column=1, columnspan=4, sticky='EW')
   
+        # for sigma levels
         self.spinbox = tk.Spinbox(master, from_= 1, to = 72)
-        self.spinbox.grid(row=5, column=6, columnspan=4, sticky="EW")
-       
+        self.spinbox.grid(row=5, column=6, columnspan=2, sticky="EW")
+
+        # the swicher for vertical coordinate        
         self.vcoor = tk.StringVar()
         self.radiobutton = tk.Radiobutton(master, text='Pressure Level',variable=self.vcoor, value='0G')
-        self.radiobutton.grid(row=4, column=10, columnspan=2, sticky="W")
+        self.radiobutton.grid(row=4, column=8, columnspan=2, sticky="W")
         self.radiobutton.invoke()
         self.radiobutton = tk.Radiobutton(master, text='Sigma Level',variable=self.vcoor, value='MG')
-        self.radiobutton.grid(row=5, column=10, columnspan=2, sticky="W")
+        self.radiobutton.grid(row=5, column=8, columnspan=2, sticky="W")
 
+        # option for ploting difference
         self.diff = tk.IntVar()
         self.checkbutton = tk.Checkbutton(master, text='Difference', variable=self.diff, onvalue=1, offvalue=0)
-        self.checkbutton.grid(row=4, column=13, columnspan=2, sticky="WE")
+        self.checkbutton.grid(row=4, column=17, columnspan=2, sticky="NWS")
 
+        # option for ploting contours
+        self.contour = tk.IntVar()
+        self.checkbutton = tk.Checkbutton(master, text='Contours', variable=self.contour, onvalue=1, offvalue=0)
+        self.checkbutton.grid(row=3, column=17, columnspan=2, sticky="NWS")
+
+        # option for looping over the forecast time 
+        self.loop = tk.IntVar()
+        self.checkbutton = tk.Checkbutton(master, text='Looping', variable=self.loop, onvalue=1, offvalue=0)
+        self.checkbutton.grid(row=2, column=17, columnspan=2, sticky="NWS")
+
+        # the main triger for ploting action 
         self.button = tk.Button(master, text="plot", command=self.clickPlot, bg= 'gray', fg = 'white')
         self.button.grid(row=5, column=17, columnspan=2, sticky='NEWS') 
 
+        # option for auto fit
+        self.selfmaxmin = tk.IntVar()
+        self.checkbutton = tk.Checkbutton(master, text='Max/Min :', variable=self.selfmaxmin, onvalue=1, offvalue=0)
+        self.checkbutton.grid(row=4, column=10, columnspan=2, sticky="NES")
+
+        self.maxmin = tk.StringVar(master)
+        self.maxmin.set('max,min') 
+        self.entry = tk.Entry(master, textvariable=self.maxmin)
+        self.entry.grid(row=4, column=12, columnspan=2, sticky="WE")
+
+        # footage 
         self.info_str = 'Copyright © 2018 Deng-Shun Chen. All rights reserved'
         self.label1 = tk.Label(master, text=self.info_str)
         self.label1.grid(row=7, column=0, columnspan=20, sticky='WE')
 
+        # progressbar 
         self.progressbar_var = tk.IntVar()
         self.progressbar = ttk.Progressbar(master, mode='determinate', orient=tk.HORIZONTAL, maximum=100, value=0, variable=self.progressbar_var)
         self.progressbar.grid(row=8, column=0, columnspan=20, sticky='WE')
 
+        # figure display frame 
         self.frame_canvas = tk.Frame(master)
         self.frame_canvas.grid(row=6, column=0, columnspan=20, sticky='NEWS')
         self.frame_canvas.columnconfigure(0, weight=1)
         self.frame_canvas.rowconfigure(0, weight=1)
 
+        # canvas 
         self.canvas = tk.Canvas(self.frame_canvas, width = 1000, height = 600)
         self.canvas.grid(row=0, column=0, sticky='news')
 
-      
+        # scrollbar
         self.vbar = tk.Scrollbar(self.frame_canvas, orient="vertical", command=self.canvas.yview)
         self.vbar.grid(row=0, column=1, sticky='ns')
         self.canvas.configure(yscrollcommand=self.vbar.set)
@@ -528,10 +577,14 @@ class Application(tk.Frame):
         self.show_figure()
 
 
-if __name__ == '__main__':             
+if __name__ == '__main__':     
+        
+  # start up the app.
   root = tk.Tk()
   app = Application(root)
   root.mainloop()
+
+  # remove previous figure file
   if Path(app.figname).is_file():
     os.remove(app.figname)
 

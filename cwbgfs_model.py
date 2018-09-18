@@ -9,6 +9,7 @@ cwbgfs_model_dict={'model flag' : [jcap,nlon,nlat]}
 
 cwbgfs_level_dict={ \
 'SSL' : 'Sea Level', \
+'W00' : 'Sea Surface', \
 '010' : '10 hPa',  \
 '020' : '20 hPa',  \
 '030' : '30 hPa', \
@@ -109,7 +110,7 @@ cwbgfs_level_dict={ \
 'M69' : 'sigma level 69', \
 'M70' : 'sigma level 70', \
 'M71' : 'sigma level 71', \
-'M72' : 'sigma level 72', \
+'M72' : 'sigma level 72' \
 }
 '''
 cwbgfs_level_dict{'dms levs' : 'name'
@@ -123,12 +124,30 @@ cwbgfs_variable_dict={ \
 '210' : 'V-wind (m/s)', \
 '220' : 'Omega Veritical Wind (hPa/h)', \
 '230' : 'Divergence (1/s)', \
-'500' : 'Specific Humidity (Kg/Kg)', \
-'550' : 'Cloud Liquid Water mixing ratio (Kg/Kg)', \
+'500' : 'Specific Humidity (kg/kg)', \
+'510' : 'Relative Humidity (%)', \
+'550' : 'Cloud Liquid Water mixing ratio (kg/kg)', \
 '560' : 'Ozone mixing ratio (kg/kg)' \
 }
 '''
 cwbgfs_variable_dict{'dms var' : 'name'}
 '''
 
+cwbgfs_dmsvar_dict={ \
+'Geopotential height' : '000', \
+'Temperature'         : '100', \
+'U component of wind' : '200', \
+'V component of wind' : '210', \
+'Omega'               : '220', \
+'Specific humidity'   : '500', \
+'Relative humidity'   : '510', \
+'Cloud liquid water mixing ratio' : '550', \
+'Ozone mixing ratio'  : '560', \
+'Sea Surface Temperature' : '100', \
+'Sea Level Pressure'  : '010' \
+}
 
+cwbgfs_dmslev_dict={ \
+'Sea Surface Temperature' : 'W00', \
+'Sea Level Pressure'  : 'SSL' \
+}
